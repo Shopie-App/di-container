@@ -1,0 +1,21 @@
+{
+    "name": "shopie/di-container",
+    "description": "IoC Container",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Shopie\\DiContainer\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Shopie",
+            "email": "dev@shopie.gr"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.2"
+    }
+}
