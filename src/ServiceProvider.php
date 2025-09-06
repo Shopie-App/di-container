@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Shopie\DiContainer;
 
 use ReflectionClass;
-use ReflectionNamedType;
 use ReflectionUnionType;
 use Shopie\DiContainer\Contracts\ServiceCollectionInterface;
 use Shopie\DiContainer\Exception\ServiceNotInContainerException;

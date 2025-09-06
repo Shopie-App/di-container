@@ -24,7 +24,7 @@ interface ServiceCollectionInterface
      *                  Defaults to Scoped.
      * @param null|object $object Instantiated object from container.
      */
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, object $object = null): void;
+    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, ?object $object = null): void;
 
     
     public function exists(bool $isConcrete, string $abstractOrConcrete, ?string $concrete = null): bool;

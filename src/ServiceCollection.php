@@ -13,7 +13,7 @@ final class ServiceCollection implements ServiceCollectionInterface
         private array $collection = []
     ) {}
 
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, object $object = null): void
+    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, ?object $object = null): void
     {
         // is concrete flag when no concrete is send
         $isConcrete = $this->isConcrete($abstractOrConcrete);
