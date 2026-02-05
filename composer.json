@@ -8,6 +8,11 @@
             "Shopie\\DiContainer\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Shopie\\DiContainer\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Shopie",
