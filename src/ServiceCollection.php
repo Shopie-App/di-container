@@ -6,14 +6,20 @@ namespace Shopie\DiContainer;
 
 use Shopie\DiContainer\Contracts\ServiceCollectionInterface;
 use Shopie\DiContainer\Exception\NoConcreteTypeException;
+use Shopie\DiContainer\Exception\ServiceInCollectionException;
 
 final class ServiceCollection implements ServiceCollectionInterface
 {
+    public int $count {
+        get => count($this->collection);
+    }
+
     public function __construct(
-        private array $collection = []
+        private array $collection = [],
+        private array $aliases = []
     ) {}
 
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, ?object $object = null): void
+    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = self::TYPE_SCOPED, ?object $object = null): void
     {
         // is concrete flag when no concrete is send
         $isConcrete = $this->isConcrete($abstractOrConcrete);
@@ -24,96 +30,76 @@ final class ServiceCollection implements ServiceCollectionInterface
         }
 
         // already in collection?
-        if ($this->exists($isConcrete, $abstractOrConcrete, $concrete)) {
-            return;
+        if ($this->exists($abstractOrConcrete)) {
+            throw new ServiceInCollectionException($abstractOrConcrete);
         }
 
-        // add with no abstract type
-        if ($concrete == null) {
+        // add
+        $this->collection[$abstractOrConcrete] = [
+            'concrete' => $concrete ?? $abstractOrConcrete,
+            'type' => $type,
+            'instance' => $object
+        ];
 
-            $this->collection[] = [null, $abstractOrConcrete, $type, $object];
-            return;
+        // create an alias if a different concrete name exists
+        if ($concrete !== null && $concrete !== $abstractOrConcrete) {
+            $this->aliases[$concrete] = $abstractOrConcrete;
         }
-
-        // add with abstract type
-        $this->collection[] = [$abstractOrConcrete, $concrete, $type, $object];
     }
 
-    public function exists(bool $isConcrete, string $abstractOrConcrete, ?string $concrete = null): bool
+    public function exists(string $abstractOrConcrete): bool
     {
-        if (($len = count($this->collection)) == 0) {
-            return false;
-        }
-
-        $exists = false;
-
-        $searchPos = $concrete != null ? 1 : ($isConcrete ? 1 : 0);
-
-        $searchKey = $concrete != null ? $concrete : $abstractOrConcrete;
-
-        for ($i = 0; $i < $len; $i++) {
-
-            if ($this->collection[$i][$searchPos] == $searchKey) {
-
-                $exists = true;
-                break;
-            }
-        }
-
-        return $exists;
+        return isset($this->collection[$abstractOrConcrete]) || isset($this->aliases[$abstractOrConcrete]);
     }
 
     public function get(?string $abstractOrConcrete): ?Service
     {
-        // length of collection, return if empty
-        if (($len = count($this->collection)) == 0) {
+        // resolve alias first
+        $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
+
+        if (!isset($this->collection[$key])) {
             return null;
         }
-        // is concrete defines element's position to search for in item
-        $searchPos = $this->isConcrete($abstractOrConcrete) ? 1 : 0;
 
-        $service = null;
+        // fetch data
+        $data = $this->collection[$key];
 
-        // position in collection
-        $pos = 0;
+        // return new service
+        return new Service(
+            $data['concrete'],
+            $data['type'],
+            $key,
+            $data['instance']
+        );
+    }
 
-        for ($i = 0; $i < $len; $i++) {
+    public function remove(string $abstractOrConcrete): void
+    {
+        // resolve the real key (works if input is Alias or Abstract)
+        $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
 
-            if ($this->collection[$i][$searchPos] === $abstractOrConcrete) {
+        // remove the service definition
+        unset($this->collection[$key]);
 
-                // service data object
-                $service = new Service(
-                    $this->collection[$i][1],
-                    $this->collection[$i][2],
-                    $pos,
-                    $this->collection[$i][3]
-                );
-                break;
-            }
+        // remove the input itself from aliases if it was an alias 
+        // (this covers the case where the key IS the input)
+        unset($this->aliases[$abstractOrConcrete]);
 
-            $pos++;
+        // remove ALL aliases pointing to this service
+        $aliasesToRemove = array_keys($this->aliases, $key, true);
+
+        foreach ($aliasesToRemove as $alias) {
+            unset($this->aliases[$alias]);
         }
-
-        return $service;
     }
 
-    public function size(): int
+    public function setObject(string $abstractOrConcrete, object $instance): void
     {
-        return count($this->collection);
-    }
+        $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
 
-    public function remove(int $pos): void
-    {
-        if ($this->collection[$pos][3] !== null) {
-            $this->collection[$pos][3] = null;
+        if (isset($this->collection[$key])) {
+            $this->collection[$key]['instance'] = $instance;
         }
-        
-        array_splice($this->collection, $pos, 1);
-    }
-
-    public function setObject(int $pos, object $objectId): void
-    {
-        $this->collection[$pos][3] = $objectId;
     }
 
     private function isConcrete(string $className): bool

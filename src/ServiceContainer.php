@@ -14,11 +14,11 @@ final class ServiceContainer extends ServiceContainerBase
 
     public function addScoped(string $abstractOrConcrete, ?string $concrete = null): void
     {
-        $this->collection->add($abstractOrConcrete, $concrete, 1);
+        $this->collection->add($abstractOrConcrete, $concrete, ServiceCollectionInterface::TYPE_SCOPED);
     }
 
     public function addEphemeral(string $abstractOrConcrete, ?string $concrete = null): void
     {
-        $this->collection->add($abstractOrConcrete, $concrete, 2);
+        $this->collection->add($abstractOrConcrete, $concrete, ServiceCollectionInterface::TYPE_EPHEMERAL);
     }
 }

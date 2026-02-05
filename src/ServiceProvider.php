@@ -32,70 +32,66 @@ final class ServiceProvider extends ServiceProviderBase
         try {
 
             // if scoped service check for instance and return it
-            if ($service->type === 1 && $service->instance !== null) {
+            if ($service->type === ServiceCollectionInterface::TYPE_SCOPED && $service->instance !== null) {
                 return $service->instance;
             }
 
             // start introspection
             $reflector = new ReflectionClass($service->concreteClassName);
 
-            // stop if abstract
-            if ($reflector->isAbstract()) {
-                throw new ServiceProvideException('Abstract class '.$service->concreteClassName.' cannot be instantiated');
-            }
-
-            // stop if interface
-            if ($reflector->isInterface()) {
-                throw new ServiceProvideException('Interface type '.$service->concreteClassName.' cannot be instantiated');
+            // stop if abstract or interface
+            if (!$reflector->isInstantiable()) {
+                throw new ServiceProvideException('Class '.$service->concreteClassName.' cannot be instantiated (abstract or interface)');
             }
             
             // get constructor
             $classConstructor = $reflector->getConstructor();
 
-            // if no constructor add instance to collection and return it
-            if ($classConstructor === null) {
-
-                $object = $reflector->newInstanceWithoutConstructor();
-
-                if ($service->type == 1) {
-                    $this->collection->setObject($service->collectionPos, $object);
-                }
-
-                return $object;
-            }
-
-            // get any params in constructor
-            $params = $classConstructor->getParameters();
-
-            // constructor loaded arguments
             $args = [];
 
-            foreach ($params as $param) {
+            if ($classConstructor !== null) {
+                
+                // get any params in constructor
+                $params = $classConstructor->getParameters();
 
-                // get type, handle null
-                if (($reflectedType = $param->getType()) === null) {
+                foreach ($params as $param) {
 
-                    $args[] = null;
-                    continue;
+                    // get type, handle null
+                    if (($reflectedType = $param->getType()) === null) {
+                        $args[] = null;
+                        continue;
+                    }
+
+                    // resolve the type to inject
+                    $typeName = null;
+
+                    if ($reflectedType instanceof ReflectionUnionType) {
+                        foreach ($reflectedType->getTypes() as $type) {
+                            if (!$type->isBuiltin()) {
+                                $typeName = $type->getName();
+                                break;
+                            }
+                        }
+                    } elseif ($reflectedType instanceof \ReflectionNamedType) {
+                        if (!$reflectedType->isBuiltin()) {
+                            $typeName = $reflectedType->getName();
+                        }
+                    }
+
+                    // get and init service
+                    $args[] = $typeName !== null && !$param->isDefaultValueAvailable()
+                        ? $this->getService($typeName)
+                        : $param->getDefaultValue();
                 }
-
-                // case of union or single declared type
-                $types = $reflectedType instanceof ReflectionUnionType ? $reflectedType->getTypes() : [$reflectedType];
-
-                // get and init service
-                $args[] = !$types[0]->isBuiltin() && !$param->isDefaultValueAvailable() 
-                ? $this->getService($types[0]->getName()) : $param->getDefaultValue();
             }
 
             // init object with args
-            $object = $this->newInstance($reflector, $args);
+            $object = $reflector->newInstance(...$args);
 
             // if scoped add reference to collection
-            if ($service->type == 1) {
-                $this->collection->setObject($service->collectionPos, $object);
+            if ($service->type === ServiceCollectionInterface::TYPE_SCOPED) {
+                $this->collection->setObject($service->abstractKey, $object);
             }
-
-            $service = null;
 
             // return object
             return $object;
@@ -104,10 +100,5 @@ final class ServiceProvider extends ServiceProviderBase
 
             throw new ServiceProvideException($ex->getMessage());
         }
-    }
-
-    private function newInstance(ReflectionClass $reflector, array $args): object
-    {
-        return $reflector->newInstance(...$args);
     }
 }

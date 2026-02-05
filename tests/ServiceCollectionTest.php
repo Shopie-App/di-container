@@ -6,6 +6,7 @@ namespace Shopie\DiContainer\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Shopie\DiContainer\Exception\NoConcreteTypeException;
+use Shopie\DiContainer\Exception\ServiceInCollectionException;
 use Shopie\DiContainer\ServiceCollection;
 
 final class ServiceCollectionTest extends TestCase
@@ -26,9 +27,9 @@ final class ServiceCollectionTest extends TestCase
     }
 
     /**
-     * Test add same objects either as concrete or coupled with abstraction.
+     * Verifies that unique services are counted correctly.
      */
-    public function testServiceCollectionAddRandom(): void
+    public function testSetAddsUniqueServices(): void
     {
         // init collection
         $collection = new ServiceCollection();
@@ -38,19 +39,27 @@ final class ServiceCollectionTest extends TestCase
 
         $collection->add(TestClassInterface::class, TestClass::class);
 
-        $collection->add(TestClass::class);
-
-        $collection->add(TestClassInterface::class, TestClassB::class);
-
-        $collection->add(TestClass::class);
-
-        $collection->add(TestClassB::class);
-
-        $collection->add(TestClassInterface::class, TestClassB::class);
-
         // expecting collection to have only 2 items
-        $this->assertEquals(2, $collection->size());
+        $this->assertEquals(2, $collection->count);
     }
+
+    /**
+     * Verifies that the container PROTECTS uniqueness by throwing.
+     */
+    public function testSetPreventsDuplicates(): void
+    {
+        $collection = new ServiceCollection();
+        $id = 'service.one';
+        
+        // add the service
+        $collection->add(TestClass::class);
+
+        // expect exception
+        $this->expectException(ServiceInCollectionException::class);
+
+        // add it again
+        $collection->add(TestClass::class);
+}
 
     /**
      * Test add and get by interface or concrete.
@@ -117,6 +126,9 @@ final class ServiceCollectionTest extends TestCase
         // add a service
         $collection->add(TestClassInterface::class, TestClass::class);
 
+        // expect exception
+        $this->expectException(ServiceInCollectionException::class);
+
         // add another service
         $collection->add(TestClassInterface::class, TestClassB::class);
 
@@ -155,6 +167,22 @@ final class ServiceCollectionTest extends TestCase
         $this->assertEquals(TestClass::class, $serviceA->concreteClassName);
         $this->assertEquals(TestClassB::class, $serviceB->concreteClassName);
     }
+
+    /**
+     * Test a service is removed.
+     */
+    public function testCanRemoveService(): void
+    {
+        $collection = new ServiceCollection();
+        $collection->add(TestClassB::class);
+
+        $this->assertEquals(1, $collection->count);
+        
+        $collection->remove(TestClassB::class);
+        
+        $this->assertEquals(0, $collection->count);
+        $this->assertFalse($collection->exists(TestClassB::class));
+}
 }
 
 // test interface

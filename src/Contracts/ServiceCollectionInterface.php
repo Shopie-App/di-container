@@ -9,6 +9,17 @@ use Shopie\DiContainer\Service;
 interface ServiceCollectionInterface
 {
     /**
+     * Service Types
+     */
+    public const TYPE_SCOPED = 1;
+    public const TYPE_EPHEMERAL = 2;
+
+    /**
+     * Total number of services currently registered in the collection.
+     */
+    public int $count { get; }
+
+    /**
      * Add a service to the collection.
      * 
      * Add a service either by providing a concrete type or an abstract type 
@@ -16,18 +27,22 @@ interface ServiceCollectionInterface
      * Parameter $object is the instantiated object. Ephemeral services will always 
      * return a new object.
      * 
-     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name. 
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
      *                                  Throws a NoConcreteTypeException exception when $concrete 
      *                                  is not provided and $abstractOrConcrete is an abstraction.
      * @param null|string $concrete Concrete type fully qualified class name.
-     * @param int $type Type of service. Set to 1 for Scoped services or to 2 for Ephemeral ones.
+     * @param int $type Type of service. Set to self::TYPE_SCOPED or self::TYPE_EPHEMERAL.
      *                  Defaults to Scoped.
      * @param null|object $object Instantiated object from container.
      */
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = 1, ?object $object = null): void;
+    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = self::TYPE_SCOPED, ?object $object = null): void;
 
-    
-    public function exists(bool $isConcrete, string $abstractOrConcrete, ?string $concrete = null): bool;
+    /**
+     * Checks if a specific service exists in the collection.
+     * 
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
+     */
+    public function exists(string $abstractOrConcrete): bool;
 
     /**
      * Get a service called from provider.
@@ -39,14 +54,9 @@ interface ServiceCollectionInterface
     public function get(?string $abstractOrConcrete): ?Service;
 
     /**
-     * Get the size of the collection.
-     */
-    public function size(): int;
-
-    /**
      * TODO: 2 below need tests
      */
-    public function remove(int $pos): void;
+    public function remove(string $abstractOrConcrete): void;
 
-    public function setObject(int $pos, object $objectId): void;
+    public function setObject(string $abstractOrConcrete, object $objectId): void;
 }
