@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Shopie\DiContainer\Tests;
+
 use PHPUnit\Framework\TestCase;
 use Shopie\DiContainer\Exception\NoConcreteTypeException;
 use Shopie\DiContainer\ServiceCollection;
