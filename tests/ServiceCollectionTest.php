@@ -5,27 +5,11 @@ declare(strict_types=1);
 namespace Shopie\DiContainer\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Shopie\DiContainer\Exception\NoConcreteTypeException;
 use Shopie\DiContainer\Exception\ServiceInCollectionException;
 use Shopie\DiContainer\ServiceCollection;
 
 final class ServiceCollectionTest extends TestCase
 {
-    /**
-     * Test no concrete type exception thrown.
-     */
-    public function testServiceCollectionNoConcreteException(): void
-    {
-        // init collection
-        $collection = new ServiceCollection();
-
-        // register
-        $this->expectException(NoConcreteTypeException::class);
-
-        // add abstraction
-        $collection->add(TestClassInterface::class);
-    }
-
     /**
      * Verifies that unique services are counted correctly.
      */
@@ -59,7 +43,7 @@ final class ServiceCollectionTest extends TestCase
 
         // add it again
         $collection->add(TestClass::class);
-}
+    }
 
     /**
      * Test add and get by interface or concrete.
@@ -76,7 +60,7 @@ final class ServiceCollectionTest extends TestCase
         $service = $collection->get(TestClassInterface::class);
 
         // assert
-        $this->assertEquals(TestClass::class, $service->concreteClassName);
+        $this->assertEquals(TestClass::class, $service->concrete);
     }
 
     /**
@@ -94,7 +78,7 @@ final class ServiceCollectionTest extends TestCase
         $service = $collection->get(TestClassBase::class);
 
         // assert
-        $this->assertEquals(TestClassB::class, $service->concreteClassName);
+        $this->assertEquals(TestClassB::class, $service->concrete);
     }
 
     /**
@@ -112,7 +96,7 @@ final class ServiceCollectionTest extends TestCase
         $service = $collection->get(TestClass::class);
 
         // assert
-        $this->assertEquals(TestClass::class, $service->concreteClassName);
+        $this->assertEquals(TestClass::class, $service->concrete);
     }
 
     /**
@@ -139,8 +123,8 @@ final class ServiceCollectionTest extends TestCase
         $serviceB = $collection->get(TestClassB::class);
 
         // assert
-        $this->assertEquals(TestClass::class, $serviceA->concreteClassName);
-        $this->assertEquals(TestClassB::class, $serviceB->concreteClassName);
+        $this->assertEquals(TestClass::class, $serviceA->concrete);
+        $this->assertEquals(TestClassB::class, $serviceB->concrete);
     }
 
     /**
@@ -164,8 +148,8 @@ final class ServiceCollectionTest extends TestCase
         $serviceB = $collection->get(TestClassB::class);
 
         // assert
-        $this->assertEquals(TestClass::class, $serviceA->concreteClassName);
-        $this->assertEquals(TestClassB::class, $serviceB->concreteClassName);
+        $this->assertEquals(TestClass::class, $serviceA->concrete);
+        $this->assertEquals(TestClassB::class, $serviceB->concrete);
     }
 
     /**
@@ -182,7 +166,7 @@ final class ServiceCollectionTest extends TestCase
         
         $this->assertEquals(0, $collection->count);
         $this->assertFalse($collection->exists(TestClassB::class));
-}
+    }
 }
 
 // test interface

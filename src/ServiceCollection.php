@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Shopie\DiContainer;
 
 use Shopie\DiContainer\Contracts\ServiceCollectionInterface;
-use Shopie\DiContainer\Exception\NoConcreteTypeException;
 use Shopie\DiContainer\Exception\ServiceInCollectionException;
 
 final class ServiceCollection implements ServiceCollectionInterface
@@ -19,16 +18,8 @@ final class ServiceCollection implements ServiceCollectionInterface
         private array $aliases = []
     ) {}
 
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = self::TYPE_SCOPED, ?object $object = null): void
+    public function add(string $abstractOrConcrete, string|callable|null $concrete = null, int $type = self::TYPE_SCOPED): void
     {
-        // is concrete flag when no concrete is send
-        $isConcrete = $this->isConcrete($abstractOrConcrete);
-
-        // stop if no concrete has been send
-        if ($concrete == null && !$isConcrete) {
-            throw new NoConcreteTypeException($abstractOrConcrete);
-        }
-
         // already in collection?
         if ($this->exists($abstractOrConcrete)) {
             throw new ServiceInCollectionException($abstractOrConcrete);
@@ -38,11 +29,11 @@ final class ServiceCollection implements ServiceCollectionInterface
         $this->collection[$abstractOrConcrete] = [
             'concrete' => $concrete ?? $abstractOrConcrete,
             'type' => $type,
-            'instance' => $object
+            'instance' => null
         ];
 
         // create an alias if a different concrete name exists
-        if ($concrete !== null && $concrete !== $abstractOrConcrete) {
+        if (is_string($concrete) && $concrete !== $abstractOrConcrete) {
             $this->aliases[$concrete] = $abstractOrConcrete;
         }
     }
@@ -52,7 +43,7 @@ final class ServiceCollection implements ServiceCollectionInterface
         return isset($this->collection[$abstractOrConcrete]) || isset($this->aliases[$abstractOrConcrete]);
     }
 
-    public function get(?string $abstractOrConcrete): ?Service
+    public function get(string $abstractOrConcrete): ?Service
     {
         // resolve alias first
         $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
@@ -66,9 +57,9 @@ final class ServiceCollection implements ServiceCollectionInterface
 
         // return new service
         return new Service(
+            $key,
             $data['concrete'],
             $data['type'],
-            $key,
             $data['instance']
         );
     }
@@ -100,12 +91,5 @@ final class ServiceCollection implements ServiceCollectionInterface
         if (isset($this->collection[$key])) {
             $this->collection[$key]['instance'] = $instance;
         }
-    }
-
-    private function isConcrete(string $className): bool
-    {
-        $reflector = new \ReflectionClass($className);
-
-        return !$reflector->isAbstract() && !$reflector->isInterface();
     }
 }

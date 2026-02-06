@@ -23,19 +23,15 @@ interface ServiceCollectionInterface
      * Add a service to the collection.
      * 
      * Add a service either by providing a concrete type or an abstract type 
-     * plus a concrete type.Type of services are Scoped and Ephemeral. 
-     * Parameter $object is the instantiated object. Ephemeral services will always 
-     * return a new object.
+     * plus a concrete type. Type of services are Scoped and Ephemeral. 
+     * Ephemeral services will always return a new object.
      * 
      * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
-     *                                  Throws a NoConcreteTypeException exception when $concrete 
-     *                                  is not provided and $abstractOrConcrete is an abstraction.
-     * @param null|string $concrete Concrete type fully qualified class name.
+     * @param null|string|callable $concrete Concrete type fully qualified class name or a Closure.
      * @param int $type Type of service. Set to self::TYPE_SCOPED or self::TYPE_EPHEMERAL.
      *                  Defaults to Scoped.
-     * @param null|object $object Instantiated object from container.
      */
-    public function add(string $abstractOrConcrete, ?string $concrete = null, int $type = self::TYPE_SCOPED, ?object $object = null): void;
+    public function add(string $abstractOrConcrete, string|callable|null $concrete = null, int $type = self::TYPE_SCOPED): void;
 
     /**
      * Checks if a specific service exists in the collection.
@@ -47,16 +43,24 @@ interface ServiceCollectionInterface
     /**
      * Get a service called from provider.
      * 
-     * @param null|string $abstractOrConcrete Abstract or concrete fully qualified class name.
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
      * 
      * @return null|Service Returns a Service object or null if not in collection.
      */
-    public function get(?string $abstractOrConcrete): ?Service;
+    public function get(string $abstractOrConcrete): ?Service;
 
     /**
-     * TODO: 2 below need tests
+     * Removes a service from the collection.
+     * 
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
      */
     public function remove(string $abstractOrConcrete): void;
 
-    public function setObject(string $abstractOrConcrete, object $objectId): void;
+    /**
+     * Sets the instantiated object for a service.
+     * 
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
+     * @param object $instance The instantiated object.
+     */
+    public function setObject(string $abstractOrConcrete, object $instance): void;
 }

@@ -8,7 +8,7 @@ use Shopie\DiContainer\Contracts\ServiceContainerInterface;
 
 abstract class ServiceContainerBase implements ServiceContainerInterface
 {
-    abstract public function addScoped(string $abstractOrConcrete, ?string $concrete = null): void;
+    abstract public function addScoped(string $abstractOrConcrete, string|callable|null $concrete = null): void;
 
-    abstract public function addEphemeral(string $abstractOrConcrete, ?string $concrete = null): void;
+    abstract public function addEphemeral(string $abstractOrConcrete, string|callable|null $concrete = null): void;
 }

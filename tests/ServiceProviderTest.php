@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Shopie\DiContainer\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Shopie\DiContainer\Contracts\ServiceCollectionInterface;
 use Shopie\DiContainer\Exception\ServiceNotInContainerException;
 use Shopie\DiContainer\ServiceCollection;
 use Shopie\DiContainer\ServiceProvider;
+use Shopie\DiContainer\Exception\ServiceProviderException;
 
 final class ServiceProviderTest extends TestCase
 {
@@ -27,7 +29,27 @@ final class ServiceProviderTest extends TestCase
     }
 
     /**
-     * TODO: Test cannot add same abstraction more than once. This check could also leave in collection class.
+     * Test that resolving an interface without a concrete implementation throws a specific error.
+     */
+    public function testServiceProviderInterfaceNoConcrete(): void
+    {
+        // init collection and provider
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        // add interface without concrete
+        $collection->add(SomeTestClassInterface::class);
+
+        // expect exception
+        $this->expectException(ServiceProviderException::class);
+        $this->expectExceptionMessage('Service "'.SomeTestClassInterface::class.'" is not instantiable');
+
+        // try get
+        $provider->getService(SomeTestClassInterface::class);
+    }
+
+    /**
+     * TODO: Test cannot add same abstraction more than once. This check could also live in collection class.
      */
 
     /**
@@ -112,10 +134,112 @@ final class ServiceProviderTest extends TestCase
         $objectB = $provider->getService(SomeTestClassB::class);
 
         // assert
-        $this->assertInstanceOf(SomeTestClassB::class, $objectA);
-        $this->assertInstanceOf(SomeTestClassB::class, $objectB);
+        $this->assertSame($objectA, $objectB);
     }
 
+    /**
+     * Test closure service resolution.
+     */
+    public function testServiceProviderClosure(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add('closure_service', fn () => new SomeTestClass());
+
+        $service = $provider->getService('closure_service');
+        $this->assertInstanceOf(SomeTestClass::class, $service);
+    }
+
+    /**
+     * Test scoped service returns same instance.
+     */
+    public function testServiceProviderScopedReturnsSameInstance(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(SomeTestClass::class);
+
+        $instance1 = $provider->getService(SomeTestClass::class);
+        $instance2 = $provider->getService(SomeTestClass::class);
+
+        $this->assertSame($instance1, $instance2);
+    }
+
+    /**
+     * Test ephemeral service returns new instance.
+     */
+    public function testServiceProviderEphemeralReturnsNewInstance(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(SomeTestClass::class, null, ServiceCollectionInterface::TYPE_EPHEMERAL);
+
+        $instance1 = $provider->getService(SomeTestClass::class);
+        $instance2 = $provider->getService(SomeTestClass::class);
+
+        $this->assertNotSame($instance1, $instance2);
+    }
+
+    /**
+     * Test primitive parameter with default value.
+     */
+    public function testServiceProviderPrimitiveWithDefault(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(ClassWithPrimitiveDefault::class);
+
+        $instance = $provider->getService(ClassWithPrimitiveDefault::class);
+        $this->assertEquals(123, $instance->id);
+    }
+
+    /**
+     * Test nullable primitive parameter (no default) injects null.
+     */
+    public function testServiceProviderNullablePrimitive(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(ClassWithNullablePrimitive::class);
+
+        $instance = $provider->getService(ClassWithNullablePrimitive::class);
+        $this->assertNull($instance->id);
+    }
+
+    /**
+     * Test unresolvable parameter throws exception.
+     */
+    public function testServiceProviderUnresolvableParam(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(ClassWithUnresolvable::class);
+
+        $this->expectException(ServiceProviderException::class);
+        $this->expectExceptionMessage('Parameter "id" in class "'.ClassWithUnresolvable::class.'" cannot be resolved');
+
+        $provider->getService(ClassWithUnresolvable::class);
+    }
+
+    /**
+     * Test dependency with default null.
+     */
+    public function testServiceProviderDependencyWithDefault(): void
+    {
+        $collection = new ServiceCollection();
+        $provider = new ServiceProvider($collection);
+
+        $collection->add(ClassWithDependencyDefault::class);
+
+        $instance = $provider->getService(ClassWithDependencyDefault::class);
+        $this->assertNull($instance->dep);
+    }
 }
 
 // test interface
@@ -147,4 +271,24 @@ class SomeTestClassB extends SomeTestClassBase
 // test concrete 3 no constructor
 class SomeTestClassC extends SomeTestClassBase
 {
+}
+
+class ClassWithPrimitiveDefault
+{
+    public function __construct(public int $id = 123) {}
+}
+
+class ClassWithNullablePrimitive
+{
+    public function __construct(public ?int $id) {}
+}
+
+class ClassWithUnresolvable
+{
+    public function __construct(public $id) {}
+}
+
+class ClassWithDependencyDefault
+{
+    public function __construct(public ?SomeTestClassInterface $dep = null) {}
 }
