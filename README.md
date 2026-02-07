@@ -100,3 +100,55 @@ $collection->add(UserController::class);
 // UserController will be instantiated with UserRepository injected automatically
 $controller = $provider->getService(UserController::class);
 ```
+
+### Resetting Services (Persistent Environments)
+
+In persistent environments like Swoole, RoadRunner, or FrankenPHP, services are often reused across requests. To prevent data leakage (e.g., user context, database connections), you can implement the ResettableInterface.
+
+1. Implement ResettableInterface in your service:
+
+```php
+use Shopie\DiContainer\Contracts\ResettableInterface;
+
+class UserService implements ResettableInterface
+{
+    public function reset(): void
+    {
+        // Reset state for the next request
+        $this->currentUser = null;
+    }
+}
+```
+
+2. Call resetAll() on the collection at the end of the request lifecycle:
+
+```php
+// After the request is handled
+$collection->resetAll();
+```
+
+### Manual Injection (Testing)
+
+You can manually inject an instantiated object into the container using setObject. This is useful for testing (injecting mocks) or when bridging with other containers.
+
+Note: The service must be registered first.
+```php
+// Register the service first
+$collection->add(MyService::class);
+
+// Inject the instance
+$mock = new MockService();
+$collection->setObject(MyService::class, $mock);
+
+
+### Removing Services
+You can remove a service definition and its instance from the collection at runtime.
+
+```php
+$collection->remove(MyService::class);
+```
+
+<!--
+[PROMPT_SUGGESTION]Create a GitHub Actions workflow to run the tests automatically.[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]Refactor the ServiceProvider to allow getting a service by its alias directly.[PROMPT_SUGGESTION]
+-->
