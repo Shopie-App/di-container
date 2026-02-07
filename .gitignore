@@ -4,3 +4,4 @@
 *.lock
 .phpunit.result.cache
 /vendor/
+site/
