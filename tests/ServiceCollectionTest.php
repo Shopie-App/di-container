@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Shopie\DiContainer\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Shopie\DiContainer\Contracts\ResettableInterface;
 use Shopie\DiContainer\Exception\ServiceInCollectionException;
 use Shopie\DiContainer\ServiceCollection;
 
@@ -167,6 +168,55 @@ final class ServiceCollectionTest extends TestCase
         $this->assertEquals(0, $collection->count);
         $this->assertFalse($collection->exists(TestClassB::class));
     }
+
+    /**
+     * Test that resetAll calls reset on resettable services.
+     */
+    public function testResetAllResetsServices(): void
+    {
+        $collection = new ServiceCollection();
+        $collection->add(ResettableTestClass::class);
+
+        $service = new ResettableTestClass();
+        $service->state = 'dirty';
+
+        $collection->setObject(ResettableTestClass::class, $service);
+
+        $collection->resetAll();
+
+        $this->assertEquals('clean', $service->state);
+        // Ensure it is still tracked for subsequent resets
+        $this->assertCount(1, $collection->resettableInstances);
+    }
+
+    /**
+     * Test that replacing or removing a service cleans up the resettable tracking list.
+     */
+    public function testResettableTrackingLifecycle(): void
+    {
+        $collection = new ServiceCollection();
+        $collection->add(ResettableTestClass::class);
+
+        $instance1 = new ResettableTestClass();
+        $collection->setObject(ResettableTestClass::class, $instance1);
+
+        // Verify tracked
+        $this->assertCount(1, $collection->resettableInstances);
+        $this->assertArrayHasKey(spl_object_hash($instance1), $collection->resettableInstances);
+
+        // Replace instance
+        $instance2 = new ResettableTestClass();
+        $collection->setObject(ResettableTestClass::class, $instance2);
+
+        // Verify old removed, new tracked
+        $this->assertCount(1, $collection->resettableInstances);
+        $this->assertArrayNotHasKey(spl_object_hash($instance1), $collection->resettableInstances);
+        $this->assertArrayHasKey(spl_object_hash($instance2), $collection->resettableInstances);
+
+        // Remove service
+        $collection->remove(ResettableTestClass::class);
+        $this->assertCount(0, $collection->resettableInstances);
+    }
 }
 
 // test interface
@@ -187,4 +237,15 @@ class TestClass extends TestClassBase
 // test concrete 2
 class TestClassB extends TestClassBase
 {
+}
+
+// test resettable
+class ResettableTestClass implements ResettableInterface
+{
+    public string $state = 'clean';
+
+    public function reset(): void
+    {
+        $this->state = 'clean';
+    }
 }
