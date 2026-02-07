@@ -147,8 +147,3 @@ You can remove a service definition and its instance from the collection at runt
 ```php
 $collection->remove(MyService::class);
 ```
-
-<!--
-[PROMPT_SUGGESTION]Create a GitHub Actions workflow to run the tests automatically.[/PROMPT_SUGGESTION]
-[PROMPT_SUGGESTION]Refactor the ServiceProvider to allow getting a service by its alias directly.[PROMPT_SUGGESTION]
--->

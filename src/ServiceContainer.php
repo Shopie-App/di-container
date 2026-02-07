@@ -21,4 +21,9 @@ final class ServiceContainer extends ServiceContainerBase
     {
         $this->collection->add($abstractOrConcrete, $concrete, ServiceCollectionInterface::TYPE_EPHEMERAL);
     }
+
+    public function resetAll(): void
+    {
+        $this->collection->resetAll();
+    }
 }

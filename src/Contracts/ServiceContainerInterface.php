@@ -25,4 +25,11 @@ interface ServiceContainerInterface
      * @return void
      */
     public function addEphemeral(string $abstractOrConcrete, string|callable|null $concrete = null): void;
+
+    /**
+     * Resets all instantiated services that implement ResettableInterface.
+     *
+     * @return void
+     */
+    public function resetAll(): void;
 }
