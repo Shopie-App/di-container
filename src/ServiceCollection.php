@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Shopie\DiContainer;
 
+use Shopie\DiContainer\Contracts\ResettableInterface;
 use Shopie\DiContainer\Contracts\ServiceCollectionInterface;
 use Shopie\DiContainer\Exception\ServiceInCollectionException;
 
 final class ServiceCollection implements ServiceCollectionInterface
 {
+    public private(set) array $resettableInstances = [];
+
     public int $count {
         get => count($this->collection);
     }
@@ -69,6 +72,14 @@ final class ServiceCollection implements ServiceCollectionInterface
         // resolve the real key (works if input is Alias or Abstract)
         $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
 
+        // cleanup resettable instance if it exists
+        if (isset($this->collection[$key]['instance'])) {
+            $instance = $this->collection[$key]['instance'];
+            if ($instance instanceof ResettableInterface) {
+                unset($this->resettableInstances[spl_object_hash($instance)]);
+            }
+        }
+
         // remove the service definition
         unset($this->collection[$key]);
 
@@ -84,12 +95,30 @@ final class ServiceCollection implements ServiceCollectionInterface
         }
     }
 
+    public function resetAll(): void
+    {
+        foreach ($this->resettableInstances as $service) {
+            $service->reset();
+        }
+    }
+
     public function setObject(string $abstractOrConcrete, object $instance): void
     {
         $key = $this->aliases[$abstractOrConcrete] ?? $abstractOrConcrete;
 
+        // store the instance
         if (isset($this->collection[$key])) {
+            // cleanup old instance if it exists
+            if (($oldInstance = $this->collection[$key]['instance']) instanceof ResettableInterface) {
+                unset($this->resettableInstances[spl_object_hash($oldInstance)]);
+            }
+
             $this->collection[$key]['instance'] = $instance;
+
+            // track it for resetting if it implements the interface
+            if ($instance instanceof ResettableInterface) {
+                $this->resettableInstances[spl_object_hash($instance)] = $instance;
+            }
         }
     }
 }

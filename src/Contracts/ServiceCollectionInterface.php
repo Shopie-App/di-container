@@ -20,6 +20,14 @@ interface ServiceCollectionInterface
     public int $count { get; }
 
     /**
+     * The list of services currently tracked for resetting.
+     * Use { get; } here so the implementation can decide HOW it's stored.
+     * 
+     * @var ResettableInterface[]
+     */
+    public array $resettableInstances { get; }
+
+    /**
      * Add a service to the collection.
      * 
      * Add a service either by providing a concrete type or an abstract type 
@@ -55,6 +63,13 @@ interface ServiceCollectionInterface
      * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
      */
     public function remove(string $abstractOrConcrete): void;
+
+    /**
+     * Resets all instantiated services that implement ResettableInterface.
+     *
+     * @return void
+     */
+    public function resetAll(): void;
 
     /**
      * Sets the instantiated object for a service.
