@@ -27,6 +27,14 @@ interface ServiceContainerInterface
     public function addEphemeral(string $abstractOrConcrete, string|callable|null $concrete = null): void;
 
     /**
+     * Sets the instantiated object for a service.
+     * 
+     * @param string $abstractOrConcrete Abstract or concrete fully qualified class name.
+     * @param object $instance The instantiated object.
+     */
+    public function setObject(string $abstractOrConcrete, object $instance): void;
+
+    /**
      * Resets all instantiated services that implement ResettableInterface.
      *
      * @return void

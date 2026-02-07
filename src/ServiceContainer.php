@@ -22,6 +22,11 @@ final class ServiceContainer extends ServiceContainerBase
         $this->collection->add($abstractOrConcrete, $concrete, ServiceCollectionInterface::TYPE_EPHEMERAL);
     }
 
+    public function setObject(string $abstractOrConcrete, object $instance): void
+    {
+        $this->collection->setObject($abstractOrConcrete, $instance);
+    }
+
     public function resetAll(): void
     {
         $this->collection->resetAll();

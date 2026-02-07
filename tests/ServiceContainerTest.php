@@ -44,4 +44,17 @@ final class ServiceContainerTest extends TestCase
         $container = new ServiceContainer($collection);
         $container->addEphemeral('TestService');
     }
+
+    public function testSetObjectDelegatesToCollection(): void
+    {
+        $collection = $this->createMock(ServiceCollectionInterface::class);
+        $instance = new \stdClass();
+
+        $collection->expects($this->once())
+            ->method('setObject')
+            ->with('TestService', self::identicalTo($instance));
+
+        $container = new ServiceContainer($collection);
+        $container->setObject('TestService', $instance);
+    }
 }
